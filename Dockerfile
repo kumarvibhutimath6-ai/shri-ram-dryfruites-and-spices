@@ -16,13 +16,13 @@ FROM ${BASE_IMAGE} AS base
 RUN --mount=type=secret,id=pkg-mirror-host,target=/etc/pkg_mirror_host.txt \
   if [ -f /etc/pkg_mirror_host.txt ]; then cat /etc/pkg_mirror_host.txt >> /etc/apt/mirrorlist.txt; fi
 RUN --mount=type=secret,id=apt-auth-conf,target=/etc/apt/auth.conf.d/apt_auth.conf \
-  apt-get -qq update && apt-get -qq install --no-install-recommends ca-certificates curl git xz-utils \
+  apt-get -qq update && apt-get -qq install --no-install-recommends ca-certificates curl git xz-utils libatomic1 \
   && ARCH="$(dpkg --print-architecture)" \
   && case "$ARCH" in \
-       amd64) NODE_ARCH="x64" ;; \
-       arm64) NODE_ARCH="arm64" ;; \
-       *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;; \
-     esac \
+        amd64) NODE_ARCH="x64" ;; \
+        arm64) NODE_ARCH="arm64" ;; \
+        *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;; \
+      esac \
   && NODE_VERSION="26.12.1" \
   && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -o "/tmp/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" \
   && mkdir -p /usr/local \
@@ -31,7 +31,7 @@ RUN --mount=type=secret,id=apt-auth-conf,target=/etc/apt/auth.conf.d/apt_auth.co
   && rm -rf "/tmp/node-v${NODE_VERSION}-linux-${NODE_ARCH}" "/tmp/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" \
   && node --version
 # Fail the build unless NodeSource installed Node 26.x at 26.12.1 or later (CVE-2026-111497 brotli decoder fix).
-RUN node -e 'const [maj, min, pat] = process.versions.node.split(".").map(Number); if (maj !== 26 || min < 12 || (min === 12 && pat < 1)) { throw new Error("Node 26.x >= 26.12.1 required (brotli CVE-2026-111497 fix)"); }'
+RUN node -e 'const [maj, min, pat] = process.versions.node.split(".").map(Number); if (maj !== 26 || min < 12 || (min === 12 && pat < 1)) { throw new Error("Node 26.x >= 26.12.1 required (brotli CVE fix)"); }' 
 # Stages built FROM base inherit this ARG, so every later stage can use APP_HOME.
 ARG APP_HOME="/home/node/app"
 RUN useradd -ms /bin/bash node \
