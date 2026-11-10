@@ -123,6 +123,22 @@ jobs:
 
           echo "Image tags: $IMAGE_TAGS"
 
+      # 5b. Authenticate to GHCR for the base image used by Dockerfile
+      - name: Authenticate to GHCR for base image
+        shell: bash
+        env:
+          GHCR_BASE_USERNAME: ${{ secrets.GHCR_BASE_USERNAME }}
+          GHCR_BASE_TOKEN: ${{ secrets.GHCR_BASE_TOKEN }}
+        run: |
+          if [[ -n "${GHCR_BASE_USERNAME}" && -n "${GHCR_BASE_TOKEN}" ]]; then
+            echo "Logging in to GHCR to access the GitHub-provided base image."
+            echo "${GHCR_BASE_TOKEN}" | buildah login ghcr.io \
+              --username "${GHCR_BASE_USERNAME}" \
+              --password-stdin
+          else
+            echo "No GHCR base-image credentials configured. If the base image is private, add GHCR_BASE_USERNAME/GHCR_BASE_TOKEN secrets."
+          fi
+
       # 6. Build container image using Buildah
       - name: Build Docker Image
         id: build-image
