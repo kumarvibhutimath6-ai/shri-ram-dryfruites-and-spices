@@ -31,7 +31,7 @@ RUN --mount=type=secret,id=apt-auth-conf,target=/etc/apt/auth.conf.d/apt_auth.co
   && rm -rf "/tmp/node-v${NODE_VERSION}-linux-${NODE_ARCH}" "/tmp/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" \
   && node --version
 # Fail the build unless NodeSource installed Node 26.x at 26.12.1 or later (CVE-2026-111497 brotli decoder fix).
-RUN node -e 'const [maj, min, pat] = process.versions.node.split(".").map(Number); if (maj !== 26 || min < 12 || (min === 12 && pat < 1)) { throw new Error("Node 26.x >= 26.12.1 required (brotli CVE fix)"); }' 
+RUN node -e 'const [maj, min, pat] = process.versions.node.split(".").map(Number); if (maj !== 26 || min < 12 || (min === 12 && pat < 1)) { throw new Error("Node 26.x >= 26.12.1 required (brotli CVE fix)"); }'
 # Stages built FROM base inherit this ARG, so every later stage can use APP_HOME.
 ARG APP_HOME="/home/node/app"
 RUN useradd -ms /bin/bash node \
@@ -44,7 +44,7 @@ WORKDIR $APP_HOME
 COPY --chown=node:node content content/
 COPY --chown=node:node assets assets/
 COPY --chown=node:node data data/
-COPY --chown=node:node --chmod=+x \
+COPY --chown=node:node --chmod=0755 \
   src/deployments/production/build-scripts/*.sh build-scripts/
 # Mount the PAT secret as a BuildKit file so the secret file stays out of layers.
 # Fetch docs-early-access, merge it over local content, then clone translations.
