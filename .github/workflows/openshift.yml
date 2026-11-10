@@ -139,6 +139,22 @@ jobs:
             echo "No GHCR base-image credentials configured. If the base image is private, add GHCR_BASE_USERNAME/GHCR_BASE_TOKEN secrets."
           fi
 
+      - name: Prepare docs PAT for build secret
+        id: prepare-docs-secret
+        shell: bash
+        env:
+          DOCS_BOT_PAT_BASE: ${{ secrets.DOCS_BOT_PAT_BASE }}
+        run: |
+          if [[ -z "${DOCS_BOT_PAT_BASE}" ]]; then
+            echo "ERROR: DOCS_BOT_PAT_BASE is required for the docs fetch step in this build."
+            exit 1
+          fi
+
+          mkdir -p "$RUNNER_TEMP/build-secrets"
+          printf '%s' "${DOCS_BOT_PAT_BASE}" > "$RUNNER_TEMP/build-secrets/docs-bot-pat.txt"
+          chmod 600 "$RUNNER_TEMP/build-secrets/docs-bot-pat.txt"
+          echo "docs_pat_file=$RUNNER_TEMP/build-secrets/docs-bot-pat.txt" >> "$GITHUB_OUTPUT"
+
       # 6. Build container image using Buildah
       - name: Build Docker Image
         id: build-image
@@ -148,6 +164,8 @@ jobs:
           tags: ${{ env.IMAGE_TAGS }}
           dockerfiles: |
             ./Dockerfile
+          extra-args: |
+            --secret=id=DOCS_BOT_PAT_BASE,src=${{ steps.prepare-docs-secret.outputs.docs_pat_file }}
 
       # 7. Push image to GitHub Container Registry
       - name: Push Image to GHCR
