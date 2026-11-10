@@ -2,9 +2,11 @@
 # Most environment variables come from config/moda/configuration/*/env.yaml.
 # Mirror NODE_OPTIONS there and here for defense in depth.
 
-# Update the base image digest from the gh-base-noble package page:
-# https://github.com/github/gh-base-image/pkgs/container/gh-base-image%2Fgh-base-noble
-FROM ghcr.io/github/gh-base-image/gh-base-noble:20261028-150140-g8ff90a672@sha256:2f8cb0ab06a0547bd9d70a81829f680208e7e6852d1e6abc1f68569d414e3d00 AS base
+# Use a public official Ubuntu base image by default so the GitHub Actions runner can build
+# without needing access to the private GHCR package. If you intentionally need a private
+# ghcr.io base image, override this via build arg or by changing the ARG below.
+ARG BASE_IMAGE=ubuntu:24.04
+FROM ${BASE_IMAGE} AS base
 # Install curl for NodeSource setup.
 # Install git for early-access and translation clones.
 # Ubuntu's nodejs package lags the Node LTS release line.
@@ -19,7 +21,7 @@ RUN --mount=type=secret,id=apt-auth-conf,target=/etc/apt/auth.conf.d/apt_auth.co
   && apt-get install -y nodejs \
   && node --version
 # Fail the build unless NodeSource installed Node 26.x at 26.12.1 or later (CVE-2026-111497 brotli decoder fix).
-RUN node -e 'const [maj, min, pat] = process.versions.node.split(".").map(Number); if (maj !== 26 || min < 12 || (min === 12 && pat < 1)) { throw new Error("Node 26.x >= 26.12.1 required (brotli CVE-2026-111497), got " + process.versions.node); }'
+RUN node -e 'const [maj, min, pat] = process.versions.node.split(".").map(Number); if (maj !== 26 || min < 12 || (min === 12 && pat < 1)) { throw new Error("Node 26.x >= 26.12.1 required (brotli CVE-2026-111497 fix)"); }'
 # Stages built FROM base inherit this ARG, so every later stage can use APP_HOME.
 ARG APP_HOME="/home/node/app"
 RUN useradd -ms /bin/bash node \
