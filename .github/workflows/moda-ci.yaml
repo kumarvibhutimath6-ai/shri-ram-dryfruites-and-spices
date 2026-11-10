@@ -16,19 +16,18 @@ on:
     types:
       - checks_requested
 
-# No permissions by default.
+# Default permissions are disabled.
 permissions: {}
 
 jobs:
 
   # ==========================================
-  # JOB 1: SET VAULT KEYS
+  # JOB 1: CONFIGURE VAULT KEYS
   # ==========================================
 
   set-vault-keys:
-    # Skip duplicate merge queue bot pushes to main.
-    # zizmor: ignore[bot-conditions]
-    if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor == 'github-merge-queue[bot]') }}
+    # Skip duplicate builds for merge queue bot pushes to main.
+    if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor == 'github-merge-queue[bot]') }} # zizmor: ignore[bot-conditions]
 
     permissions: {}
 
@@ -38,7 +37,7 @@ jobs:
       modified_vault_keys: ${{ steps.modify_vault_keys.outputs.modified }}
 
     steps:
-      - name: Set Vault Keys
+      - name: Set Vault Keys Output
         id: modify_vault_keys
 
         env:
@@ -60,7 +59,7 @@ jobs:
   moda-config-bundle:
     if: ${{ github.repository == 'github/docs-internal' }}
 
-    name: docs-internal-moda-config-bundle
+    name: ${{ matrix.ci_job.job }}
 
     needs:
       - set-vault-keys
@@ -97,7 +96,7 @@ jobs:
   docker-image:
     if: ${{ github.repository == 'github/docs-internal' }}
 
-    name: docs-internal-docker-image
+    name: ${{ matrix.ci_job.job }}
 
     needs:
       - set-vault-keys
@@ -122,6 +121,8 @@ jobs:
     with:
       ci-formatted-job-name: ${{ matrix.ci_job.job }}
       vault-keys: ${{ needs.set-vault-keys.outputs.modified_vault_keys }}
+
+      # Pass DOCS_BOT_PAT_BASE from Vault as a Docker build secret.
       attest: true
       docker-build-env-secrets: 'DOCS_BOT_PAT_BASE'
 
@@ -136,7 +137,7 @@ jobs:
   docker-security:
     if: ${{ github.repository == 'github/docs-internal' }}
 
-    name: docs-internal-docker-security
+    name: ${{ matrix.ci_job.job }}
 
     needs:
       - set-vault-keys
@@ -160,6 +161,8 @@ jobs:
     with:
       ci-formatted-job-name: ${{ matrix.ci_job.job }}
       vault-keys: ${{ needs.set-vault-keys.outputs.modified_vault_keys }}
+
+      # Pass DOCS_BOT_PAT_BASE from Vault as a Docker build secret.
       docker-build-env-secrets: 'DOCS_BOT_PAT_BASE'
 
     secrets:
